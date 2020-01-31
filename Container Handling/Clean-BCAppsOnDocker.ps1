@@ -28,7 +28,8 @@
             $App | Uninstall-NAVApp -DoNotSaveData
             $App | Sync-NAVApp -ServerInstance BC -Mode Clean -force
             $App | UnPublish-NAVApp            
-            Sync-NAVTenant -ServerInstance BC -Tenant Default -Mode ForceSync -force    
+            Sync-NAVTenant -ServerInstance BC -Tenant Default -Mode ForceSync -force   
+            Write-Host -ForegroundColor Green 'Apps successfully uninstalled' 
         }                
 
     }
