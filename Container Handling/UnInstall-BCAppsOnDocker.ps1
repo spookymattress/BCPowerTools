@@ -1,4 +1,4 @@
-﻿function Clean-AppsOnDocker {
+﻿function UnInstall-BCAppsOnDocker {
     <#
     .SYNOPSIS
     Removing all non-Microsoft Apps from a certain Docker Container.  Warning: intentionally deletes the data!
@@ -8,7 +8,7 @@
     Needs to "navcontainerhelper"
     
     .EXAMPLE
-    Clean-AppsOnDocker -ContainerName navserver
+    UnInstall-BCAppsOnDocker -ContainerName navserver
     
     .NOTES
     Assumes the "navcontainerhelper" is installed.  If not installed, please install it by "Install-module navcontainerhelper -force"
@@ -22,17 +22,17 @@
 
     Invoke-Command -Session $Session -ScriptBlock {        
 
-        $Apps = Get-NAVAppInfo -ServerInstance NAV | Where Publisher -ne 'Microsoft'
+        $Apps = Get-NAVAppInfo -ServerInstance BC | Where Publisher -ne 'Microsoft'
                 
         foreach ($App in $Apps){
             $App | Uninstall-NAVApp -DoNotSaveData
-            $App | Sync-NAVApp -ServerInstance NAV -Mode Clean -force
+            $App | Sync-NAVApp -ServerInstance BC -Mode Clean -force
             $App | UnPublish-NAVApp            
-            Sync-NAVTenant -ServerInstance NAV -Tenant Default -Mode ForceSync -force   
+            Sync-NAVTenant -ServerInstance BC -Tenant Default -Mode ForceSync -force   
             Write-Host -ForegroundColor Green 'Apps successfully uninstalled' 
         }                
 
     }
 }
 
-Export-ModuleMember -Function Clean-AppsOnDocker
+Export-ModuleMember -Function UnInstall-BCAppsOnDocker
