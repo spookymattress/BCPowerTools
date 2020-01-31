@@ -1,4 +1,4 @@
-﻿function Remove-CustomBCAppsOnDocker {
+﻿function Clean-BCAppsOnDocker {
     <#
     .SYNOPSIS
     Removing all non-Microsoft Apps from a certain Docker Container.  Warning: intentionally deletes the data!
@@ -8,7 +8,7 @@
     Needs to "navcontainerhelper"
     
     .EXAMPLE
-    Remove-CustomNAVAppsOnDocker -ContainerName navserver
+    Clean-BCAppsOnDocker -ContainerName navserver
     
     .NOTES
     Assumes the "navcontainerhelper" is installed.  If not installed, please install it by "Install-module navcontainerhelper -force"
@@ -34,4 +34,4 @@
     }
 }
 
-Export-ModuleMember -Function Remove-CustomBCAppsOnDocker
+Export-ModuleMember -Function Clean-BCAppsOnDocker
