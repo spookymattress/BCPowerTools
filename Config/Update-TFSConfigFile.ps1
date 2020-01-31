@@ -37,28 +37,8 @@ function Update-TFSConfigFile {
         Set-TFSConfigKeyValue -KeyName 'navLicenceFile' -KeyValue 'licence file for NAV containers'
     }
 
-    if ($null -eq (Get-TFSConfigKeyValue 'buildHelperURL')) {
-        Set-TFSConfigKeyValue -KeyName 'buildHelperURL' -KeyValue 'https://github.com/CleverDynamics/al-build-helper/raw/master/Clever%20Dynamics_Build%20Helper.app'
-    }
-
-    if ($null -eq (Get-TFSConfigKeyValue 'buildHelperBC14URL')) {
-        Set-TFSConfigKeyValue -KeyName 'buildHelperBC14URL' -KeyValue 'https://github.com/CleverDynamics/al-build-helper/raw/master/Clever%20Dynamics_Build%20Helper_BC14.app'
-    }
-
     if ($null -eq (Get-TFSConfigKeyValue 'translationDictionaryPath')) {
         Set-TFSConfigKeyValue -KeyName 'translationDictionaryPath' -KeyValue (Join-Path (Split-Path (Get-TFSConfigPath) -Parent) 'dictionary.xml')
-    }
-
-    if ($null -eq (Get-TFSConfigKeyValue 'ftpServer')) {
-        Set-TFSConfigKeyValue -KeyName 'ftpServer' -KeyValue 'FTP server'
-    }
-
-    if ($null -eq (Get-TFSConfigKeyValue 'ftpUser')) {
-        Set-TFSConfigKeyValue -KeyName 'ftpUser' -KeyValue 'FTP user name'
-    }
-
-    if ($null -eq (Get-TFSConfigKeyValue 'ftpPassword')) {
-        Set-TFSConfigKeyValue -KeyName 'ftpPassword' -KeyValue 'FTP password'
     }
 
     if ($Config -ne $null) {
