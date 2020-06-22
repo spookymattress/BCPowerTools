@@ -9,3 +9,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.2.0] - 2020-06-22
 ### Added
 - Support for version numbers in environment.json file in order to specify a specific build to build upon
+### Removed
+- Branch specific handling
