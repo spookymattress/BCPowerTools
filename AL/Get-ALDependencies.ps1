@@ -63,6 +63,8 @@ function Get-ALDependenciesFromAppJson {
 
                 $DependencyProject = $EnvDependency.project
                 $DependencyRepo = $EnvDependency.repo
+                $DependencyVersion = $EnvDependency.version
+
             }
             # otherwise aquire the app from the last successful build
             else {
@@ -79,19 +81,15 @@ function Get-ALDependenciesFromAppJson {
                 }
             }
 
-            $DependencyBranch = Get-BranchNameForDependencies -Path $SourcePath
             if ($DependencyProject -ne '') {
-                if ($DependencyBranch -ne '') {
-                    if (!(Get-RefIsInRepository -ProjectName $DependencyProject -RepositoryName $DependencyRepo -RefName $DependencyBranch)) {
-                        $DependencyBranch = ''
-                    }
+                if ($null -ne $DependencyVersion) {
+                    Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name) version: $($DependencyVersion)"
+                }
+                else {
+                    Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name)"
                 }
 
-                if ($DependencyBranch -ne '') {
-                    Write-Host "Using branch $DependencyBranch to fetch dependencies"
-                }
-
-                $Apps = Get-AppFromLastSuccessfulBuild -ProjectName $DependencyProject -RepositoryName $DependencyRepo -BranchName $DependencyBranch
+                $Apps = Get-AppFromLastSuccessfulBuild -ProjectName $DependencyProject -RepositoryName $DependencyRepo -BuildNumber $DependencyVersion
                 $DependencyAppJson = Get-AppJsonForProjectAndRepo -ProjectName $DependencyProject -RepositoryName $DependencyRepo
 
                 if ($null -eq $Apps) {
