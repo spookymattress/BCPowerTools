@@ -9,7 +9,9 @@
         [Parameter(Mandatory=$false)]
         [switch]$IncludeTests,
         [Parameter(Mandatory=$false)]
-        [string]$BranchName = ''
+        [string]$BranchName = '',
+        [Parameter(Mandatory=$false)]
+        [string]$BuildNumber = ''
     )
 
     $VSTSProjectName = Get-ProjectName $ProjectName
@@ -20,8 +22,11 @@
     else {
         $APIUrl = ('{0}{1}/_apis/build/builds?queryOrder=finishTimeDescending&resultFilter=succeeded&$top=1' -f (Get-TFSCollectionURL), $VSTSProjectName)
     }
-    if ($BranchName -ne ''){
+    if ($BranchName -ne '') {
         $APIUrl += '&branchName=refs/heads/{0}' -f $BranchName
+    }
+    if ($BuildNo -ne '') {
+        $APIUrl += '&buildNumber={0}' -f $BuildNumber
     }
     
     $Build = Invoke-TFSAPI $APIUrl -SuppressError
