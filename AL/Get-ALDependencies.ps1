@@ -55,7 +55,6 @@ function Get-ALDependenciesFromAppJson {
         if ($null -ne $Dependency) {
             # is the source for this app defined in the environment file?
             $EnvDependency = Get-DependencyFromEnvironment -SourcePath $SourcePath -Name $Dependency.name
-            Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name)"
             if ($null -ne $EnvDependency) {
                 if ($null -ne $EnvDependency.includetest) {
                     $IncludeTest = $EnvDependency.includetest
