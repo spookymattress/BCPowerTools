@@ -8,8 +8,6 @@
         [switch]$Install
     )
 
-    $RepositoryName = (Get-EnvironmentKeyValue -SourcePath $SourcePath -KeyName 'repo')
-
     if ($null -eq $RepositoryName) {
 
         if(($SourcePath -eq (Get-Location)) -and (Get-IsGitRepo ($SourcePath)))
@@ -67,16 +65,30 @@ function Get-ALDependenciesFromAppJson {
             }
             # otherwise aquire the app from the last successful build
             else {
+                Write-Host "Could not get dependency: $($Dependency.name) from environment.json file"
                 if ($Dependency.publisher -eq 'Microsoft') {
                     $Apps = @()
                     $DependencyAppJson = ConvertFrom-Json '{}'
-
-                    $DependencyProject = ''
-                    $DependencyRepo = ''
                 }
                 else {
-                    $DependencyProject = $Dependency.name
-                    $DependencyRepo = $RepositoryName
+                    Write-Host "Check if dependency: $($Dependency.name) is published already"
+                    try {
+                        $InstalledApps = Get-NavContainerAppInfo -containerName BC16 -tenantSpecificProperties
+                        foreach ($InstalledApp in $InstalledApps | Where-Object Name -eq $Dependency.name) {
+                            if ($InstalledApp.IsInstalled) {
+                                Write-Host "$($Dependency.name) is installed"
+                            } 
+                            else {
+                                throw "$($Dependency.name) is not installed"        
+                            }
+                        }
+                    }
+                        catch {
+                            if (!($_.Exception.Message.Contains('already published'))) {
+                                throw $_.Exception.Message
+
+                        }
+                    }
                 }
             }
 
