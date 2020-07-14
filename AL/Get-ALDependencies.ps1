@@ -30,7 +30,7 @@
 
     $AppJson = ConvertFrom-Json (Get-Content (Join-Path $SourcePath 'app.json') -Raw)
 
-    Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install
+    Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -SavePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install
 }
 
 function Get-ALDependenciesFromAppJson {
@@ -40,72 +40,34 @@ function Get-ALDependenciesFromAppJson {
         [Parameter(Mandatory=$false)]
         [string]$SourcePath = (Get-Location),
         [Parameter(Mandatory=$false)]
+        [string]$SavePath = (Get-Location),
+        [Parameter(Mandatory=$false)]
         [string]$RepositoryName,
         [Parameter(Mandatory=$false)]
         [string]$ContainerName,
         [Parameter(Mandatory=$false)]
         [switch]$Install
     )
-
-    if ($RepositoryName -eq '') {
-        $RepositoryName = 'BC'
-    }
-
-    foreach ($Dependency in $AppJson.dependencies | Where-Object Name -NotLike '*Tests*') {
-        if ($null -ne $Dependency) {
-            # is the source for this app defined in the environment file?
-            $EnvDependency = Get-DependencyFromEnvironment -SourcePath $SourcePath -Name $Dependency.name
-            Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name)"
-            if ($null -ne $EnvDependency) {
-                if ($null -ne $EnvDependency.includetest) {
-                    $IncludeTest = $EnvDependency.includetest
-                }
-
-                $DependencyProject = $EnvDependency.project
-                $DependencyRepo = $EnvDependency.repo
-                $DependencyVersion = $EnvDependency.version
-
-            }
-            # otherwise aquire the app from the last successful build
-            else {
-                if ($Dependency.publisher -eq 'Microsoft') {
-                    $Apps = @()
-                    $DependencyAppJson = ConvertFrom-Json '{}'
-
-                    $DependencyProject = ''
-                    $DependencyRepo = ''
-                }
-                else {
-                    $DependencyProject = $Dependency.name
-                    $DependencyRepo = $RepositoryName
-                }
-            }
-
-            if ($DependencyProject -ne '') {
-                if ($null -ne $DependencyVersion) {
-                    Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name) version: $($DependencyVersion)"
-                }
-                else {
-                    Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name)"
-                }
-
-                $Apps = Get-AppFromLastSuccessfulBuild -ProjectName $DependencyProject -RepositoryName $DependencyRepo -BuildNumber $DependencyVersion
-                $DependencyAppJson = Get-AppJsonForProjectAndRepo -ProjectName $DependencyProject -RepositoryName $DependencyRepo
-
-                if ($null -eq $Apps) {
-                    throw "$($Dependency.name) could not be downloaded"
-                }
-            }
-
-            # fetch any dependencies for this app
-            Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install
-            
-            # copy (and optionally install) the apps that have been collected
-            foreach ($App in $Apps | Where-Object Name -NotLike '*Tests*') {  
-                Copy-Item $App.FullName (Join-Path (Join-Path $SourcePath '.alpackages') $App.Name)
+    
+    foreach ($Dependency in $AppJson.dependencies) {
+        $EnvDependency = Get-DependencyFromEnvironment -SourcePath $SourcePath -Name $Dependency.name
+        Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name)"
+        $Apps = Get-AppFromLastSuccessfulBuild -ProjectName $EnvDependency.project -RepositoryName $EnvDependency.repo
+        $DependencyAppJson = Get-AppJsonForProjectAndRepo -ProjectName $EnvDependency.project -RepositoryName $EnvDependency.repo
+        if ($DependencyAppJson.dependencies.length -gt 0) {
+            $DepSourcePath = Get-EnvironmentJsonForProjectAndRepo -ProjectName $EnvDependency.project -RepositoryName $EnvDependency.repo
+            Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $DepSourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install    
+        } else {
+            Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install    
+        }
+        
+        
+        foreach ($App in $Apps) {
+            if (!$App.FullName.Contains('Tests')) {
+                Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                 if ($Install.IsPresent) {
                     try {
-                        Publish-NavContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install -skipVerification
+                        Publish-NavContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install
                     }
                     catch {
                         if (!($_.Exception.Message.Contains('already published'))) {
@@ -113,25 +75,8 @@ function Get-ALDependenciesFromAppJson {
                         }
                     }
                 }
-            } 
-            
-            # optionally install the test apps that have been collected as well
-            if ($IncludeTest) {
-                foreach ($App in $Apps | Where-Object Name -Like '*Tests*') {  
-                    Copy-Item $App.FullName (Join-Path (Join-Path $SourcePath '.alpackages') $App.Name)
-                    if ($Install.IsPresent) {
-                        try {
-                            Publish-NavContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install
-                        }
-                        catch {
-                            if (!($_.Exception.Message.Contains('already published'))) {
-                                throw $_.Exception.Message
-                            }
-                        }
-                    }
-                }
             }
-        }
+        }    
     }
 }
 
@@ -170,6 +115,33 @@ function Get-DependencyFromEnvironment {
     Get-EnvironmentKeyValue -SourcePath $SourcePath -KeyName 'dependencies' | Where-Object name -eq $Name
 }
 
+function Get-EnvironmentJsonForProjectAndRepo {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$ProjectName,
+        [Parameter(Mandatory=$false)]
+        [string]$RepositoryName,
+        [Parameter(Mandatory=$false)]
+        [string]$Publisher
+    )
+    if ($Publisher -eq 'Microsoft') {
+        return '{}'
+    }
+    
+    $VSTSProjectName = Get-ProjectName $ProjectName
+
+    if ($RepositoryName -eq '') {
+        $RepositoryName = 'BC'
+    }
+
+    $AppContent = Invoke-TFSAPI ('{0}{1}/_apis/git/repositories/{2}/items?path=app/environment.json' -f (Get-TFSCollectionURL), $VSTSProjectName, (Get-RepositoryId -ProjectName $VSTSProjectName -RepositoryName $RepositoryName)) -GetContents
+    $FilePath = Join-Path (Create-TempDirectory) ('environment.json' -f (New-Guid))
+    Out-File -FilePath $FilePath -InputObject $AppContent
+    $FilePath = Split-Path -Path $FilePath -resolve
+    $FilePath
+}
+
 Export-ModuleMember -Function Get-ALDependencies
 Export-ModuleMember -Function Get-ALDependenciesFromAppJson
 Export-ModuleMember -Function Get-AppJsonForProjectAndRepo
+Export-ModuleMember -Function Get-EnvironmentJsonForProjectAndRep
