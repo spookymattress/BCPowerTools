@@ -30,7 +30,7 @@
 
     $AppJson = ConvertFrom-Json (Get-Content (Join-Path $SourcePath 'app.json') -Raw)
 
-    Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install
+    Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -SavePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install
 }
 
 function Get-ALDependenciesFromAppJson {
@@ -39,6 +39,8 @@ function Get-ALDependenciesFromAppJson {
         $AppJson,
         [Parameter(Mandatory=$false)]
         [string]$SourcePath = (Get-Location),
+        [Parameter(Mandatory=$false)]
+        [string]$SavePath = (Get-Location),
         [Parameter(Mandatory=$false)]
         [string]$RepositoryName,
         [Parameter(Mandatory=$false)]
@@ -98,8 +100,14 @@ function Get-ALDependenciesFromAppJson {
             }
 
             # fetch any dependencies for this app
-            Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install
-            
+            if ($DependencyAppJson.dependencies.length -gt 0) {
+                $DepSourcePath = Get-EnvironmentJsonForProjectAndRepo -ProjectName $EnvDependency.project -RepositoryName $EnvDependency.repo
+                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $DepSourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install    
+            } else {
+                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install    
+            }
+
+
             # copy (and optionally install) the apps that have been collected
             foreach ($App in $Apps | Where-Object Name -NotLike '*Tests*') {  
                 Copy-Item $App.FullName (Join-Path (Join-Path $SourcePath '.alpackages') $App.Name)
@@ -159,6 +167,32 @@ function Get-AppJsonForProjectAndRepo {
     $AppJson
 }
 
+function Get-EnvironmentJsonForProjectAndRepo {
+    Param(
+        [Parameter(Mandatory=$true)]
+        [string]$ProjectName,
+        [Parameter(Mandatory=$false)]
+        [string]$RepositoryName,
+        [Parameter(Mandatory=$false)]
+        [string]$Publisher
+    )
+    if ($Publisher -eq 'Microsoft') {
+        return '{}'
+    }
+    
+    $VSTSProjectName = Get-ProjectName $ProjectName
+
+    if ($RepositoryName -eq '') {
+        $RepositoryName = 'BC'
+    }
+
+    $AppContent = Invoke-TFSAPI ('{0}{1}/_apis/git/repositories/{2}/items?path=app/environment.json' -f (Get-TFSCollectionURL), $VSTSProjectName, (Get-RepositoryId -ProjectName $VSTSProjectName -RepositoryName $RepositoryName)) -GetContents
+    $FilePath = Join-Path (Create-TempDirectory) ('environment.json' -f (New-Guid))
+    Out-File -FilePath $FilePath -InputObject $AppContent
+    $FilePath = Split-Path -Path $FilePath -resolve
+    $FilePath
+}
+
 function Get-DependencyFromEnvironment {
     Param(
         [Parameter(Mandatory=$true)]
@@ -173,3 +207,4 @@ function Get-DependencyFromEnvironment {
 Export-ModuleMember -Function Get-ALDependencies
 Export-ModuleMember -Function Get-ALDependenciesFromAppJson
 Export-ModuleMember -Function Get-AppJsonForProjectAndRepo
+Export-ModuleMember -Function Get-EnvironmentJsonForProjectAndRep
