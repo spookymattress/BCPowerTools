@@ -57,7 +57,6 @@ function Get-ALDependenciesFromAppJson {
         if ($null -ne $Dependency) {
             # is the source for this app defined in the environment file?
             $EnvDependency = Get-DependencyFromEnvironment -SourcePath $SourcePath -Name $Dependency.name
-            Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name)"
             if ($null -ne $EnvDependency) {
                 if ($null -ne $EnvDependency.includetest) {
                     $IncludeTest = $EnvDependency.includetest
@@ -110,7 +109,7 @@ function Get-ALDependenciesFromAppJson {
 
             # copy (and optionally install) the apps that have been collected
             foreach ($App in $Apps | Where-Object Name -NotLike '*Tests*') {  
-                Copy-Item $App.FullName (Join-Path (Join-Path $SourcePath '.alpackages') $App.Name)
+                Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                 if ($Install.IsPresent) {
                     try {
                         Publish-NavContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install -skipVerification
@@ -126,10 +125,10 @@ function Get-ALDependenciesFromAppJson {
             # optionally install the test apps that have been collected as well
             if ($IncludeTest) {
                 foreach ($App in $Apps | Where-Object Name -Like '*Tests*') {  
-                    Copy-Item $App.FullName (Join-Path (Join-Path $SourcePath '.alpackages') $App.Name)
+                    Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                     if ($Install.IsPresent) {
                         try {
-                            Publish-NavContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install
+                            Publish-NavContainerApp -containerName $ContainerName -appFile $App.FullName -sync -skipVerification -install 
                         }
                         catch {
                             if (!($_.Exception.Message.Contains('already published'))) {
