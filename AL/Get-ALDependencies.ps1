@@ -185,9 +185,15 @@ function Get-EnvironmentJsonForProjectAndRepo {
         $RepositoryName = 'BC'
     }
 
-    $AppContent = Invoke-TFSAPI ('{0}{1}/_apis/git/repositories/{2}/items?path=app/environment.json' -f (Get-TFSCollectionURL), $VSTSProjectName, (Get-RepositoryId -ProjectName $VSTSProjectName -RepositoryName $RepositoryName)) -GetContents
+    $AppContent = Invoke-TFSAPI ('{0}{1}/_apis/git/repositories/{2}/items?path=app/environment.json' -f (Get-TFSCollectionURL), $VSTSProjectName, (Get-RepositoryId -ProjectName $VSTSProjectName -RepositoryName $RepositoryName)) -GetContents -SuppressError
     $FilePath = Join-Path (Create-TempDirectory) ('environment.json' -f (New-Guid))
-    Out-File -FilePath $FilePath -InputObject $AppContent
+    if ($null -ne $AppContent) {
+        Out-File -FilePath $FilePath -InputObject $AppContent
+    }
+    else {
+        Out-File -FilePath $FilePath -InputObject '{}'
+    }
+    
     $FilePath = Split-Path -Path $FilePath -resolve
     $FilePath
 }
@@ -206,4 +212,4 @@ function Get-DependencyFromEnvironment {
 Export-ModuleMember -Function Get-ALDependencies
 Export-ModuleMember -Function Get-ALDependenciesFromAppJson
 Export-ModuleMember -Function Get-AppJsonForProjectAndRepo
-Export-ModuleMember -Function Get-EnvironmentJsonForProjectAndRep
+Export-ModuleMember -Function Get-EnvironmentJsonForProjectAndRepo
