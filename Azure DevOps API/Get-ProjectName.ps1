@@ -10,9 +10,9 @@ function Get-ProjectName {
         return
     }
 
-    $VSTSProjectName = (Get-VSTSProjects | Where-Object name -like ('*{0}' -f $ProjectName)).name
+    $VSTSProjectName = (Get-VSTSProjects | Where-Object name -like ('{0}' -f $ProjectName)).name
     if (($null -eq $VSTSProjectName) -and ($ProjectName.StartsWith('Clever'))) {
-        $VSTSProjectName = (Get-VSTSProjects | Where-Object name -like ('*{0}' -f $ProjectName.Substring(7))).name
+        $VSTSProjectName = (Get-VSTSProjects | Where-Object name -like ('{0}' -f $ProjectName.Substring(7))).name
     }
 
     $VSTSProjectName
