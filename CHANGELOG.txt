@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [Releases]
-
-## [1.0.3.4] - 2021-10-04
-### Added
-- Added functions to extract BC version numbers from artifact and container
-
+## [1.0.3.1] - 2020-12-07
+### Changed
+ - Updated version to 1.0.3.3
+ - Changed to search specific repository
+## [Releases]
 ## [1.0.3.1] - 2020-12-07
 ### Changed
  - Updated version to 1.0.3.1 and changed repository location
