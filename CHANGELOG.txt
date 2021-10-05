@@ -8,9 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Releases]
 
+## [1.0.3.5] - 2021-10-05
+### Fixed
+ - modules was not loaded correctly
+
 ## [1.0.3.4] - 2021-10-04
 ### Added
-- Added functions to extract BC version numbers from BC Conatiner and Artifact Url
+ - Added functions to extract BC version numbers from BC Conatiner and Artifact Url
 
 ## [1.0.3.1] - 2020-12-07
 ### Changed

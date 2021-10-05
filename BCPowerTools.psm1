@@ -26,6 +26,7 @@
 .(Join-Path $PSScriptRoot 'Config\Get-TFSConfigKeyValue.ps1')
 .(Join-Path $PSScriptRoot 'Config\Set-TFSConfigKeyValue.ps1')
 .(Join-Path $PSScriptRoot 'Config\Update-TFSConfigFile.ps1')
+.(Join-Path $PSScriptRoot 'Container Handling\Get-BCVersionFromContainer.ps1')
 .(Join-Path $PSScriptRoot 'Container Handling\UnInstall-AppsOnDocker.ps1')
 .(Join-Path $PSScriptRoot 'Container Handling\UnInstall-BCAppsOnDocker.ps1')
 .(Join-Path $PSScriptRoot 'File Handling\Create-EmptyDirectory.ps1')
