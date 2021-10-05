@@ -3,12 +3,16 @@ function Get-BCVersionFromContainer {
         [Parameter(Mandatory=$true)]
         [string]$ContainerName
     )
+    
+    if (Test-BcContainer -containerName $ContainerName) {
+        Write-Host $Exists
 
-    $BCContainerVersion = Get-BcContainerNavVersion $ContainerName
-    Write-Host 'Container version: ' $BCContainerVersion
+        $BCContainerVersion = Get-BcContainerNavVersion $ContainerName
+        Write-Host 'Container version: ' $BCContainerVersion
 
-    $ContainerSplitArray = $BCContainerVersion.Split('.')
-    $ContainerVersion = $ContainerSplitArray[0]+$ContainerSplitArray[1]
+        $ContainerSplitArray = $BCContainerVersion.Split('.')
+        $ContainerVersion = $ContainerSplitArray[0]+$ContainerSplitArray[1]
+    }
     [int]$ContainerVersion 
 }
 

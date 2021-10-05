@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Releases]
 
+## [1.0.3.6] - 2021-10-05
+### Fixed
+ - Check for empty container
+
 ## [1.0.3.5] - 2021-10-05
 ### Fixed
  - modules was not loaded correctly
