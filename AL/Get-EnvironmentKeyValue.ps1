@@ -10,7 +10,7 @@
         return ''
     }
 
-    $JsonContent = Get-Content (Join-Path $SourcePath 'environment.json') -Raw
+    $JsonContent = Get-Content (Join-Path $SourcePath 'environment.json') -Raw -Encoding UTF8
     $Json = ConvertFrom-Json $JsonContent
 
     $Json.PSObject.Properties.Item($KeyName).Value
