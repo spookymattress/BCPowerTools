@@ -21,7 +21,7 @@ ModuleVersion = '1.0.3.7'
 GUID = '4d841dce-88da-4cc7-8d51-153c600f2ee8'
 
 # Author of this module
-Author = 'spokymattress'
+Author = 'NORRIQ'
 
 # Company or vendor of this module
 CompanyName = 'NORRIQ'

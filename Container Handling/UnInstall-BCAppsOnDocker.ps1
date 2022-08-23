@@ -22,12 +22,12 @@
 
     Invoke-Command -Session $Session -ScriptBlock {        
 
-        $Apps = Get-NAVAppInfo -ServerInstance BC | Where Publisher -ne 'Microsoft'
+        $Apps = Get-NAVAppInfo -ServerInstance BC -Tenant default | Where Publisher -ne 'Microsoft'
                 
         foreach ($App in $Apps){
-            $App | Uninstall-NAVApp -DoNotSaveData
-            $App | Sync-NAVApp -ServerInstance BC -Mode Clean -force
-            $App | UnPublish-NAVApp            
+            $App | Uninstall-NAVApp -DoNotSaveData -Tenant Default
+            $App | Sync-NAVApp -ServerInstance BC -Mode Clean -force -Tenant Default
+            $App | UnPublish-NAVApp           
             Sync-NAVTenant -ServerInstance BC -Tenant Default -Mode ForceSync -force   
             Write-Host -ForegroundColor Green 'Apps successfully uninstalled' 
         }                

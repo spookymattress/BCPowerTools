@@ -53,7 +53,7 @@ function Get-ALDependenciesFromAppJson {
         $RepositoryName = 'BC'
     }
 
-    foreach ($Dependency in $AppJson.dependencies | Where-Object Name -NotLike '*Tests*') {
+    foreach ($Dependency in $AppJson.dependencies | Where-Object Name -NotLike '*Test*') {
         if ($null -ne $Dependency) {
             # is the source for this app defined in the environment file?
             $EnvDependency = Get-DependencyFromEnvironment -SourcePath $SourcePath -Name $Dependency.name
@@ -108,7 +108,7 @@ function Get-ALDependenciesFromAppJson {
 
 
             # copy (and optionally install) the apps that have been collected
-            foreach ($App in $Apps | Where-Object Name -NotLike '*Tests*') {  
+            foreach ($App in $Apps | Where-Object Name -NotLike '*Test*') {  
                 Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                 if ($Install.IsPresent) {
                     try {
@@ -124,7 +124,7 @@ function Get-ALDependenciesFromAppJson {
             
             # optionally install the test apps that have been collected as well
             if ($IncludeTest) {
-                foreach ($App in $Apps | Where-Object Name -Like '*Tests*') {  
+                foreach ($App in $Apps | Where-Object Name -Like '*Test*') {  
                     Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                     if ($Install.IsPresent) {
                         try {
