@@ -112,7 +112,7 @@ function Get-ALDependenciesFromAppJson {
                 Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                 if ($Install.IsPresent) {
                     try {
-                        Publish-NavContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install -skipVerification
+                        Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install -skipVerification
                     }
                     catch {
                         if (!($_.Exception.Message.Contains('already published'))) {
@@ -128,7 +128,7 @@ function Get-ALDependenciesFromAppJson {
                     Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                     if ($Install.IsPresent) {
                         try {
-                            Publish-NavContainerApp -containerName $ContainerName -appFile $App.FullName -sync -skipVerification -install 
+                            Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -skipVerification -install 
                         }
                         catch {
                             if (!($_.Exception.Message.Contains('already published'))) {
