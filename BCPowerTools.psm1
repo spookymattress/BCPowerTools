@@ -2,6 +2,7 @@
 .(Join-Path $PSScriptRoot 'AL\Get-AppFromLastSuccessfulBuild.ps1')
 .(Join-Path $PSScriptRoot 'AL\Get-BranchNameForDependencies.ps1')
 .(Join-Path $PSScriptRoot 'AL\Get-EnvironmentKeyValue.ps1')
+.(Join-Path $PSScriptRoot 'AL\Get-BaseAppNameFromFilename.ps1')
 .(Join-Path $PSScriptRoot 'Azure DevOps API\Get-ObjectsFromTFSBranch.ps1')
 .(Join-Path $PSScriptRoot 'Azure DevOps API\Invoke-TFSAPI.ps1')
 .(Join-Path $PSScriptRoot 'Azure DevOps API\Get-ChangeSetFiles.ps1')
