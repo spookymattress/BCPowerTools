@@ -4,7 +4,7 @@ function Get-BaseAppNameFromFilename {
         [string]$Filename
     )
     
-    if ($test -match  '^(.*_)(.*)(_\d.\d.\d.\d.app)') {
+    if ($Filename -match  '^(.*_)(.*)(_\d.\d.\d.\d.app)') {
         return $Matches[2]
     }
     else
