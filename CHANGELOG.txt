@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [Releases]
+## [1.0.4.4] - 2023-01-27
+### Added
+ - Get-ALDependencies: Added possibility to write dependencies to a csv file
 
 ## [1.0.3.8] - 2022-08-23
 ### Fixed

@@ -5,7 +5,9 @@
         [Parameter(Mandatory=$false)]
         [string]$ContainerName = (Get-ContainerFromLaunchJson),
         [Parameter(Mandatory=$false)]
-        [switch]$Install
+        [switch]$Install,
+        [Parameter(Mandatory=$false)]
+        [switch]$WriteDepenciesToCSVFile
     )
 
     $RepositoryName = (Get-EnvironmentKeyValue -SourcePath $SourcePath -KeyName 'repo')
@@ -30,7 +32,7 @@
 
     $AppJson = ConvertFrom-Json (Get-Content (Join-Path $SourcePath 'app.json') -Raw)
 
-    Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -SavePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install
+    Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -SavePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile
 }
 
 function Get-ALDependenciesFromAppJson {
@@ -46,8 +48,17 @@ function Get-ALDependenciesFromAppJson {
         [Parameter(Mandatory=$false)]
         [string]$ContainerName,
         [Parameter(Mandatory=$false)]
-        [switch]$Install
+        [switch]$Install,
+        [Parameter(Mandatory=$false)]
+        [switch]$WriteDepenciesToCSVFile
     )
+
+    if ($WriteDepenciesToCSVFile) {
+        $dependencyFile = Join-Path (Join-Path $SavePath '.alpackages') dep.csv
+        if (Test-Path $dependencyFile)  {
+            Remove-Item $dependencyFile -Force
+        }
+    }
 
     if ($RepositoryName -eq '') {
         $RepositoryName = 'BC'
@@ -101,12 +112,13 @@ function Get-ALDependenciesFromAppJson {
             # fetch any dependencies for this app
             if ($DependencyAppJson.dependencies.length -gt 0) {
                 $DepSourcePath = Get-EnvironmentJsonForProjectAndRepo -ProjectName $EnvDependency.project -RepositoryName $EnvDependency.repo
-                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $DepSourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install    
+                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $DepSourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile
             } else {
-                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install    
+                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile   
             }
 
 
+            
             # copy (and optionally install) the apps that have been collected
             foreach ($App in $Apps | Where-Object Name -NotLike '*Test*') {  
                 Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
@@ -116,6 +128,18 @@ function Get-ALDependenciesFromAppJson {
                     }
                     catch {
                         if (!($_.Exception.Message.Contains('already published'))) {
+                            throw $_.Exception.Message
+                        }
+                    }
+                }
+                Write-Host $App.Name
+                if ($WriteDepenciesToCSVFile.IsPresent) {
+                    try {
+                        Write-Host "Writing dependency: $($App.name) to file"
+                        New-Object -TypeName PSCustomObject -Property @{ID=$App.Name } | Export-Csv -Path $dependencyFile -NoTypeInformation -Append
+                    }
+                    catch {
+                        if (!($_.Exception.Message.Contains('error writing to csv file'))) {
                             throw $_.Exception.Message
                         }
                     }
