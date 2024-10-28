@@ -9,7 +9,7 @@
     $Repos = Invoke-TFSAPI ('{0}{1}/_apis/git/repositories' -f (Get-TFSCollectionURL), $ProjectName)
 
     if ($RepositoryName -ne '') {
-        $Id = ($Repos.value | where name -like ('*{0}*' -f $RepositoryName)).id
+        $Id = ($Repos.value | where { $_.name -ceq $RepositoryName }).id
     }
     else {
         $Id = $Repos.value.item(0).id

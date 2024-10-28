@@ -12,7 +12,7 @@
 RootModule = '.\BCPowerTools.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.4.4'
+ModuleVersion = '1.0.4.5'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
