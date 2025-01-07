@@ -10,12 +10,8 @@ function Get-BuildVersion {
         [string]$CustomerProjectName
     )
 
-    $VSTSProjectName = Get-ProjectName $ProjectName
-    $VSTSCustomerProjectName = Get-ProjectName $CustomerProjectName
-
     if ($RepositoryName -ne '') {
-        #$APIUrl = ('{0}{1}/_apis/build/builds?queryOrder=finishTimeDescending&resultFilter=succeeded&$top=1&repositoryId={2}&repositoryType=TfsGit' -f (Get-TFSCollectionURL), $VSTSProjectName, (Get-RepositoryId -ProjectName $VSTSProjectName -RepositoryName $RepositoryName))
-        $APIUrl = '{0}/{1}/_apis/distributedtask/variablegroups?groupName={2}' -f (Get-TFSCollectionURL), $VSTSProjectName, $VariableGroupName
+        $APIUrl = '{0}/{1}/_apis/distributedtask/variablegroups?groupName={2}' -f (Get-TFSCollectionURL), $ProjectName, $VariableGroupName
     }
     
     $response = Invoke-TFSAPI $APIUrl -SuppressError
@@ -31,7 +27,7 @@ function Get-BuildVersion {
     $variableGroup = $response.value[0]
     $variables = $variableGroup.variables
 
-    $searchResult = Search-VariableName -Variables $variables -SearchName $VSTSCustomerProjectName
+    $searchResult = Search-VariableName -Variables $variables -SearchName $CustomerProjectName
     return $searchResult
 }
 
