@@ -1,4 +1,5 @@
-﻿.(Join-Path $PSScriptRoot 'AL\Get-ALDependencies.ps1')
+﻿.(Join-Path $PSScriptRoot 'AL\Convert-ArtifactUrlToBCContainerName.ps1')
+.(Join-Path $PSScriptRoot 'AL\Get-ALDependencies.ps1')
 .(Join-Path $PSScriptRoot 'AL\Get-AppFromLastSuccessfulBuild.ps1')
 .(Join-Path $PSScriptRoot 'AL\Get-BaseAppNameFromFilename.ps1')
 .(Join-Path $PSScriptRoot 'AL\Get-BranchNameForDependencies.ps1')

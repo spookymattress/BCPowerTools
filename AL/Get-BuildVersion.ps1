@@ -38,7 +38,7 @@ function Search-VariableName {
     )
 
     foreach ($varName in $Variables.PSObject.Properties.Name) {
-        if ($varName -clike "*$SearchName*") {
+        if ($varName -like "*$SearchName*") {
             $result = $Variables.$varName.value
         }
     }
