@@ -1,11 +1,9 @@
 function Get-BuildVersion {
     Param(
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory=$true)]
         [string]$ProjectName,
         [Parameter(Mandatory=$false)]
         [string]$VariableGroupName = 'Build',
-        [Parameter(Mandatory=$false)]
-        [string]$CustomerProjectName,
         [Parameter(Mandatory=$false)]
         [string]$SearchName = 'version'
     )
