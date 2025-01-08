@@ -1,16 +1,16 @@
 function Get-BuildVersion {
     Param(
         [Parameter(Mandatory=$false)]
-        [string]$ProjectName = 'BuildTemplates',
+        [string]$ProjectName,
         [Parameter(Mandatory=$false)]
-        [string]$RepositoryName = 'BuildTemplates.ERP',
+        [string]$VariableGroupName = 'Build',
         [Parameter(Mandatory=$false)]
-        [string]$VariableGroupName = 'BuildVersion',
+        [string]$CustomerProjectName,
         [Parameter(Mandatory=$false)]
-        [string]$CustomerProjectName
+        [string]$SearchName = 'version'
     )
 
-    if ($RepositoryName -ne '') {
+    if ($ProjectName -ne '') {
         $APIUrl = '{0}/{1}/_apis/distributedtask/variablegroups?groupName={2}' -f (Get-TFSCollectionURL), $ProjectName, $VariableGroupName
     }
     
@@ -27,7 +27,7 @@ function Get-BuildVersion {
     $variableGroup = $response.value[0]
     $variables = $variableGroup.variables
 
-    $searchResult = Search-VariableName -Variables $variables -SearchName $CustomerProjectName
+    $searchResult = Search-VariableName -Variables $variables -SearchName $SearchName
     return $searchResult
 }
 
@@ -40,7 +40,7 @@ function Search-VariableName {
     )
 
     foreach ($varName in $Variables.PSObject.Properties.Name) {
-        if ($varName -like "*$SearchName*") {
+        if ($varName -clike "*$SearchName*") {
             $result = $Variables.$varName.value
         }
     }
