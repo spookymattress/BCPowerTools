@@ -4,4 +4,4 @@
     Create-EmptyDirectory $TempDirectoryPath
     $TempDirectoryPath
 }
-Export-ModuleMember -Function New-EmptyDirectory
+Export-ModuleMember -Function New-TempDirectory

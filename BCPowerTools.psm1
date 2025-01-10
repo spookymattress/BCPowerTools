@@ -34,4 +34,4 @@
 .(Join-Path $PSScriptRoot 'Container Handling\UnInstall-BCAppsOnDocker.ps1')
 .(Join-Path $PSScriptRoot 'File Handling\New-AADMapping.ps1')
 .(Join-Path $PSScriptRoot 'File Handling\New-EmptyDirectory.ps1')
-.(Join-Path $PSScriptRoot 'File Handling\New-EmptyDirectory.ps1')
+.(Join-Path $PSScriptRoot 'File Handling\New-TempDirectory.ps1')
