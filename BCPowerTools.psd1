@@ -12,7 +12,7 @@
 RootModule = '.\BCPowerTools.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.4.5'
+ModuleVersion = '1.0.4.6'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -27,7 +27,7 @@ Author = 'NORRIQ'
 CompanyName = 'NORRIQ'
 
 # Copyright statement for this module
-Copyright = '(c) 2019 spokymattress. All rights reserved.'
+Copyright = '(c) 2019 NORRIQ. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'Module to support Microsoft Dynamics 365 Busines Central and integration with the Azure DevOps REST API'
