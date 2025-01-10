@@ -5,7 +5,7 @@
         [string]$ServerPath
     )
 
-    $AppMgt = Join-Path (New-EmptyDirectory) 'COD1.TXT'
+    $AppMgt = Join-Path (New-TempDirectory) 'COD1.TXT'
     Get-ObjectsFromTFSBranch -BranchPath (Join-Path $ServerPath 'COD1.TXT') -DestinationPath $AppMgt -Type File
     Get-VersionList $AppMgt
     Remove-Item $AppMgt

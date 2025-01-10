@@ -40,9 +40,9 @@
     }
 
     $Artifacts = Invoke-TFSAPI ('{0}{1}/_apis/build/builds/{2}/artifacts' -f (Get-TFSCollectionURL), $VSTSProjectName, $Build.value.id)
-    $ArtifactPath = Join-Path (New-EmptyDirectory) ('{0}.zip' -f (Get-URLParameterValue -Url $Artifacts.value.resource.downloadUrl -ParameterName 'artifactName'))
+    $ArtifactPath = Join-Path (New-TempDirectory) ('{0}.zip' -f (Get-URLParameterValue -Url $Artifacts.value.resource.downloadUrl -ParameterName 'artifactName'))
     Invoke-TFSAPI ($Artifacts.value.resource.downloadUrl) -OutFile -OutFilePath $ArtifactPath
-    $ExpandPath = (New-EmptyDirectory)
+    $ExpandPath = (New-TempDirectory)
     Expand-Archive -Path $ArtifactPath -DestinationPath $ExpandPath
 
     if ($IncludeTests.IsPresent) {
