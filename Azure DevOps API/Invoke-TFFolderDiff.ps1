@@ -24,7 +24,7 @@
     }
 
     $ObjectDifferences = @()
-    $TempFile = Join-Path (Create-TempDirectory) -ChildPath 'FolderDiffResult.txt'
+    $TempFile = Join-Path (New-EmptyDirectory) -ChildPath 'FolderDiffResult.txt'
     $BatchFile = (Join-Path (Split-Path $TempFile -Parent) -ChildPath 'ExecuteFolderDiff.bat')
     [string]$Collection = '"/collection:{0}"' -f (Get-TFSCollectionURL)
     Add-Content -Path $BatchFile -Value ('"{0}" vc folderdiff "{1}" "{2}" {3} >> "{4}"'-f (Get-TFPath), $SourceFolder, $TargetFolder, $Collection, $TempFile)

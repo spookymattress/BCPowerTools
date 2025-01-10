@@ -43,7 +43,7 @@
         }
         else
         {
-            Create-EmptyDirectory -DirectoryPath $DestinationPath
+            New-EmptyDirectory -DirectoryPath $DestinationPath
 
             if ($ChangesetNo -gt 0)
             {

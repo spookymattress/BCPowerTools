@@ -27,7 +27,7 @@
     Write-Host "Repository Name: $RepositoryName"
 
     if (!([IO.Directory]::Exists((Join-Path $SourcePath '.alpackages')))) {
-        Create-EmptyDirectory (Join-Path $SourcePath '.alpackages')            
+        New-EmptyDirectory (Join-Path $SourcePath '.alpackages')            
     }
 
     $AppJson = ConvertFrom-Json (Get-Content (Join-Path $SourcePath 'app.json') -Raw)
@@ -210,7 +210,7 @@ function Get-EnvironmentJsonForProjectAndRepo {
     }
 
     $AppContent = Invoke-TFSAPI ('{0}{1}/_apis/git/repositories/{2}/items?path=app/environment.json' -f (Get-TFSCollectionURL), $VSTSProjectName, (Get-RepositoryId -ProjectName $VSTSProjectName -RepositoryName $RepositoryName)) -GetContents -SuppressError
-    $FilePath = Join-Path (Create-TempDirectory) ('environment.json' -f (New-Guid))
+    $FilePath = Join-Path (New-EmptyDirectory) ('environment.json' -f (New-Guid))
     if ($null -ne $AppContent) {
         Out-File -FilePath $FilePath -InputObject $AppContent
     }

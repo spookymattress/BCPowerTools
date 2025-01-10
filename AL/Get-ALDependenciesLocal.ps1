@@ -23,7 +23,7 @@
     Write-Host "Repository Name: $RepositoryName"
 
     if (!([IO.Directory]::Exists((Join-Path $SourcePath '.alpackages')))) {
-        Create-EmptyDirectory (Join-Path $SourcePath '.alpackages')            
+        New-EmptyDirectory (Join-Path $SourcePath '.alpackages')            
     }
 
     $AppJson = ConvertFrom-Json (Get-Content (Join-Path $SourcePath 'app.json') -Raw)
