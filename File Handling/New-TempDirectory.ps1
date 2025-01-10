@@ -1,7 +1,7 @@
 ﻿function New-TempDirectory
 {
     $TempDirectoryPath = (Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString()))
-    Create-EmptyDirectory $TempDirectoryPath
+    New-EmptyDirectory $TempDirectoryPath
     $TempDirectoryPath
 }
 Export-ModuleMember -Function New-TempDirectory
