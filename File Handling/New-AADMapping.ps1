@@ -5,7 +5,7 @@
 # 2) Use the csv file as input into this script: Get-AADMapping.ps1 -CsvFile filename.csv
 # Output is the minified json you can use in the settings of the Power BI App
 
-function Create-AADMapping {
+function New-AADMapping {
     param(
         [Parameter(Mandatory=$true)]
         $CsvFile
@@ -25,4 +25,4 @@ function Create-AADMapping {
     $Mapping | ConvertTo-Json -Depth 3 -Compress
 }
 
-Export-ModuleMember -Function Create-AADMapping
+Export-ModuleMember -Function New-AADMapping
