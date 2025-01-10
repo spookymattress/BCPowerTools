@@ -1,4 +1,4 @@
-﻿Function Create-EmptyDirectory
+﻿Function New-EmptyDirectory
 {
     Param(
         [Parameter(Mandatory=$true)]
@@ -13,4 +13,4 @@
     [IO.Directory]::CreateDirectory($DirectoryPath) | Out-Null
 }
 
-Export-ModuleMember -Function Create-EmptyDirectory
+Export-ModuleMember -Function New-EmptyDirectory
