@@ -43,7 +43,7 @@
                 {
                     $TempPath = (Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString() + ".TXT"))
                     Invoke-RestMethod -Method Get -Headers $Headers -Uri $TFSUrl -OutFile $TempPath
-                    $Result = Get-Content $TempPath -Raw
+                    $Result = Get-Content $TempPath -Raw -Encoding UTF8
                     [IO.File]::Delete($TempPath)
                     $Result
                 }
