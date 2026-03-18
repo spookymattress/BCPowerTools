@@ -21,17 +21,18 @@
                 $RepositoryName = $RepositoryUrl.Substring($RepositoryUrl.Length - 3)
             }
         }
-        
     }
 
-    Write-Host "Repository Name: $RepositoryName"
+    if ($null -ne $RepositoryName)	{
+        Write-Host "Repository Name: $RepositoryName."
+    }
 
     if (!([IO.Directory]::Exists((Join-Path $SourcePath '.alpackages')))) {
         New-EmptyDirectory (Join-Path $SourcePath '.alpackages')            
     }
 
-    $AppJson = ConvertFrom-Json (Get-Content (Join-Path $SourcePath 'app.json') -Raw)
-
+    $AppJson = Get-Content (Join-Path $SourcePath 'app.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    
     Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -SavePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile
 }
 
@@ -65,7 +66,7 @@ function Get-ALDependenciesFromAppJson {
     }
 
     foreach ($Dependency in $AppJson.dependencies | Where-Object Name -NotLike '*Test*') {
-        if ($null -ne $Dependency) {
+		if ($null -ne $Dependency) {
             # is the source for this app defined in the environment file?
             $EnvDependency = Get-DependencyFromEnvironment -SourcePath $SourcePath -Name $Dependency.name
             if ($null -ne $EnvDependency) {
@@ -92,21 +93,26 @@ function Get-ALDependenciesFromAppJson {
                     $DependencyRepo = $RepositoryName
                 }
             }
-
+			
+            $InstalledDependency = Get-BCContainerAppInfo -ContainerName $ContainerName -InstalledOnly -UseNewFormat | Where-Object {$_.Name -eq $Dependency.Name} 
+            if ($InstalledDependency -ne $null){
+                Write-Host "Skipping installed dependency: $($InstalledDependency.Name)" -ForegroundColor Yellow
+                continue				
+            }			
+			
             if ($DependencyProject -ne '') {
                 if ($null -ne $DependencyVersion) {
-                    Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name) version: $($DependencyVersion)"
+                    Write-Host "Getting $($AppJson.Name) dependency: $($Dependency.name) version: $($DependencyVersion)"
                 }
                 else {
-                    Write-Host "Getting $($AppJson.name) dependency: $($Dependency.name)"
+                    Write-Host "Getting $($AppJson.Name) dependency: $($Dependency.name)"
                 }
 
-                $Apps = Get-AppFromLastSuccessfulBuild -ProjectName $DependencyProject -RepositoryName $DependencyRepo -BuildNumber $DependencyVersion
-                $DependencyAppJson = Get-AppJsonForProjectAndRepo -ProjectName $DependencyProject -RepositoryName $DependencyRepo
-
+                $Apps = Get-AppFromLastSuccessfulBuild -ProjectName $DependencyProject -RepositoryName $DependencyRepo -BuildNumber $DependencyVersion                
                 if ($null -eq $Apps) {
                     throw "$($Dependency.name) could not be downloaded"
                 }
+		$DependencyAppJson = Get-AppJsonForProjectAndRepo -ProjectName $DependencyProject -RepositoryName $DependencyRepo
             }
 
             # fetch any dependencies for this app
@@ -116,15 +122,13 @@ function Get-ALDependenciesFromAppJson {
             } else {
                 Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile   
             }
-
-
             
             # copy (and optionally install) the apps that have been collected
             foreach ($App in $Apps | Where-Object Name -NotLike '*Test*') {  
                 Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                 if ($Install.IsPresent) {
                     try {
-                        Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install -skipVerification
+                        Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install -skipVerification -checkAlreadyInstalled -IgnoreIfAppExists
                     }
                     catch {
                         if (!($_.Exception.Message.Contains('already published'))) {
@@ -152,7 +156,7 @@ function Get-ALDependenciesFromAppJson {
                     Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
                     if ($Install.IsPresent) {
                         try {
-                            Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -skipVerification -install 
+                            Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -skipVerification -install -checkAlreadyInstalled -IgnoreIfAppExists
                         }
                         catch {
                             if (!($_.Exception.Message.Contains('already published'))) {

@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [Releases]
-## [1.0.5.3] - 2025-01-10
+
+## [1.0.5.5] - 2026-03-18
+### Fixed
+- Enhance Get-ALDependencies function with improved logging and dependency handling.
+- Added code to fix problems with øæå
+## [1.0.5.4] - 2025-01-10
 ### Fixed
 - Small bugfix
 ## [1.0.5.1] - 2025-01-10
