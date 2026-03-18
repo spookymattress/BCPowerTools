@@ -29,8 +29,7 @@
     if (!([IO.Directory]::Exists((Join-Path $SourcePath '.alpackages')))) {
         New-EmptyDirectory (Join-Path $SourcePath '.alpackages')            
     }
-
-    $AppJson = ConvertFrom-Json (Get-Content (Join-Path $SourcePath 'app.json') -Raw)
+    $AppJson = Get-Content (Join-Path $SourcePath 'app.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 
     Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -SavePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile
 }
