@@ -1,4 +1,4 @@
-﻿function Get-ALDependencies {
+function Get-ALDependencies {
     Param(
         [Parameter(Mandatory=$false)]
         [string]$SourcePath = (Get-Location),
@@ -7,7 +7,9 @@
         [Parameter(Mandatory=$false)]
         [switch]$Install,
         [Parameter(Mandatory=$false)]
-        [switch]$WriteDepenciesToCSVFile
+        [switch]$WriteDepenciesToCSVFile,
+        [Parameter(Mandatory=$false)]
+        [switch]$Inspect
     )
 
     $RepositoryName = (Get-EnvironmentKeyValue -SourcePath $SourcePath -KeyName 'repo')
@@ -27,13 +29,24 @@
         Write-Host "Repository Name: $RepositoryName."
     }
 
-    if (!([IO.Directory]::Exists((Join-Path $SourcePath '.alpackages')))) {
-        New-EmptyDirectory (Join-Path $SourcePath '.alpackages')            
+    $script:ALDependencyCache = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $script:ALTempDirectories = [System.Collections.Generic.List[string]]::new()
+
+    if (-not $Inspect.IsPresent) {
+        if (!([IO.Directory]::Exists((Join-Path $SourcePath '.alpackages')))) {
+            New-EmptyDirectory (Join-Path $SourcePath '.alpackages')
+        }
     }
 
     $AppJson = Get-Content (Join-Path $SourcePath 'app.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-    
-    Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -SavePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile
+
+    try {
+        Get-ALDependenciesFromAppJson -AppJson $AppJson -SourcePath $SourcePath -SavePath $SourcePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile -Inspect:$Inspect
+    } finally {
+        foreach ($dir in $script:ALTempDirectories) {
+            if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
+        }
+    }
 }
 
 function Get-ALDependenciesFromAppJson {
@@ -51,10 +64,12 @@ function Get-ALDependenciesFromAppJson {
         [Parameter(Mandatory=$false)]
         [switch]$Install,
         [Parameter(Mandatory=$false)]
-        [switch]$WriteDepenciesToCSVFile
+        [switch]$WriteDepenciesToCSVFile,
+        [Parameter(Mandatory=$false)]
+        [switch]$Inspect
     )
 
-    if ($WriteDepenciesToCSVFile) {
+    if ($WriteDepenciesToCSVFile -and -not $Inspect.IsPresent) {
         $dependencyFile = Join-Path (Join-Path $SavePath '.alpackages') dep.csv
         if (Test-Path $dependencyFile)  {
             Remove-Item $dependencyFile -Force
@@ -100,15 +115,21 @@ function Get-ALDependenciesFromAppJson {
                 continue				
             }			
 			
+
+            if (-not $script:ALDependencyCache.Add($Dependency.name)) {
+                Write-Host "Skipping already downloaded dependency: $($Dependency.name)" -ForegroundColor Yellow
+                continue
+            }
             if ($DependencyProject -ne '') {
+                $appNamePrefix = if ($AppJson.Name) { "$($AppJson.Name) " } else { "" }
                 if ($null -ne $DependencyVersion) {
-                    Write-Host "Getting $($AppJson.Name) dependency: $($Dependency.name) version: $($DependencyVersion)"
+                    Write-Host "Getting ${appNamePrefix}dependency: $($Dependency.name) version: $($DependencyVersion)" -NoNewline
                 }
                 else {
-                    Write-Host "Getting $($AppJson.Name) dependency: $($Dependency.name)"
+                    Write-Host "Getting ${appNamePrefix}dependency: $($Dependency.name)" -NoNewline
                 }
 
-                $Apps = Get-AppFromLastSuccessfulBuild -ProjectName $DependencyProject -RepositoryName $DependencyRepo -BuildNumber $DependencyVersion                
+                $Apps = Get-AppFromLastSuccessfulBuild -ProjectName $DependencyProject -RepositoryName $DependencyRepo -BuildNumber $DependencyVersion -Inspect:$Inspect
                 if ($null -eq $Apps) {
                     throw "$($Dependency.name) could not be downloaded"
                 }
@@ -118,26 +139,30 @@ function Get-ALDependenciesFromAppJson {
             # fetch any dependencies for this app
             if ($DependencyAppJson.dependencies.length -gt 0) {
                 $DepSourcePath = Get-EnvironmentJsonForProjectAndRepo -ProjectName $EnvDependency.project -RepositoryName $EnvDependency.repo
-                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $DepSourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile
+                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $DepSourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile -Inspect:$Inspect
             } else {
-                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile   
+                Get-ALDependenciesFromAppJson -AppJson $DependencyAppJson -SourcePath $SourcePath -SavePath $SavePath -RepositoryName $RepositoryName -ContainerName $ContainerName -Install:$Install -WriteDepenciesToCSVFile:$WriteDepenciesToCSVFile -Inspect:$Inspect
             }
             
             # copy (and optionally install) the apps that have been collected
-            foreach ($App in $Apps | Where-Object Name -NotLike '*Test*') {  
-                Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
-                if ($Install.IsPresent) {
-                    try {
-                        Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install -skipVerification -checkAlreadyInstalled -IgnoreIfAppExists
-                    }
-                    catch {
-                        if (!($_.Exception.Message.Contains('already published'))) {
-                            throw $_.Exception.Message
+            foreach ($App in $Apps | Where-Object Name -NotLike '*Test*') {
+                if ($Inspect.IsPresent) {
+                    Write-Host "INSPECT: Would copy $($App.Name) to .alpackages" -ForegroundColor Cyan
+                } else {
+                    Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
+                    if ($Install.IsPresent) {
+                        try {
+                            Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -install -skipVerification -checkAlreadyInstalled -IgnoreIfAppExists
+                        }
+                        catch {
+                            if (!($_.Exception.Message.Contains('already published'))) {
+                                throw $_.Exception.Message
+                            }
                         }
                     }
                 }
                 Write-Host $App.Name
-                if ($WriteDepenciesToCSVFile.IsPresent) {
+                if ($WriteDepenciesToCSVFile.IsPresent -and -not $Inspect.IsPresent) {
                     try {
                         Write-Host "Writing dependency: $($App.name) to file"
                         New-Object -TypeName PSCustomObject -Property @{ID=$App.Name } | Export-Csv -Path $dependencyFile -NoTypeInformation -Append
@@ -148,19 +173,23 @@ function Get-ALDependenciesFromAppJson {
                         }
                     }
                 }
-            } 
+            }
             
             # optionally install the test apps that have been collected as well
             if ($IncludeTest) {
-                foreach ($App in $Apps | Where-Object Name -Like '*Test*') {  
-                    Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
-                    if ($Install.IsPresent) {
-                        try {
-                            Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -skipVerification -install -checkAlreadyInstalled -IgnoreIfAppExists
-                        }
-                        catch {
-                            if (!($_.Exception.Message.Contains('already published'))) {
-                                throw $_.Exception.Message
+                foreach ($App in $Apps | Where-Object Name -Like '*Test*') {
+                    if ($Inspect.IsPresent) {
+                        Write-Host "INSPECT: Would copy $($App.Name) to .alpackages" -ForegroundColor Cyan
+                    } else {
+                        Copy-Item $App.FullName (Join-Path (Join-Path $SavePath '.alpackages') $App.Name)
+                        if ($Install.IsPresent) {
+                            try {
+                                Publish-BcContainerApp -containerName $ContainerName -appFile $App.FullName -sync -skipVerification -install -checkAlreadyInstalled -IgnoreIfAppExists
+                            }
+                            catch {
+                                if (!($_.Exception.Message.Contains('already published'))) {
+                                    throw $_.Exception.Message
+                                }
                             }
                         }
                     }
