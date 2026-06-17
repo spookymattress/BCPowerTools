@@ -1,4 +1,39 @@
 ﻿function Get-AppFromLastSuccessfulBuild {
+<#
+.SYNOPSIS
+    Downloads the .app files from the last successful Azure DevOps build for a project.
+.DESCRIPTION
+    Queries the Azure DevOps build API for the most recent successful build of the given
+    project/repository, downloads the artifact ZIP, extracts it to a temporary directory,
+    and returns FileInfo objects for each .app file (excluding test apps unless -IncludeTests
+    is set). The ZIP is deleted after extraction; the extracted directory is registered in
+    $script:ALTempDirectories so the caller can clean it up after copying the files.
+
+    When -Inspect is set, the function returns an empty array immediately after confirming
+    a successful build exists, without downloading anything.
+.PARAMETER ProjectName
+    Short project name (resolved to a VSTS project via Get-ProjectName).
+.PARAMETER RepositoryName
+    Repository name used to filter builds. When empty, the latest build across all
+    repositories in the project is used.
+.PARAMETER BranchName
+    Limit the build search to a specific branch (e.g. 'main').
+.PARAMETER BuildNumber
+    Limit the build search to a specific build number.
+.PARAMETER IncludeTests
+    Include test apps (files whose path contains 'Tests') in the returned list.
+.PARAMETER OpenExplorer
+    Open Windows Explorer at the extracted artifact folder after downloading.
+.PARAMETER Inspect
+    Dry-run mode. Returns an empty array after confirming a successful build exists,
+    without downloading or extracting the artifact.
+.OUTPUTS
+    System.IO.FileInfo — one entry per .app file found in the artifact.
+.EXAMPLE
+    Get-AppFromLastSuccessfulBuild -ProjectName 'MyApp' -RepositoryName 'BC'
+.EXAMPLE
+    Get-AppFromLastSuccessfulBuild -ProjectName 'MyApp' -RepositoryName 'BC' -Inspect
+#>
     Param(
         [Parameter(Mandatory=$false)]
         [string]$ProjectName,
@@ -54,6 +89,7 @@
     $ExpandPath = (New-TempDirectory)
     Expand-Archive -Path $ArtifactPath -DestinationPath $ExpandPath
     $script:ALTempDirectories.Add($ExpandPath)
+    $script:ALLastExtractPath = $ExpandPath
 
     if ($IncludeTests.IsPresent) {
         Get-ChildItem -Path $ExpandPath -Filter '*.app' -Recurse
