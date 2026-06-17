@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Releases]
 
+## [1.0.6.0] - 2026-06-17
+### Added
+ - Get-ALDependencies: Added -Inspect switch for dry-run dependency validation — resolves the full dependency graph and verifies all builds exist without downloading, copying, or touching the container
+ - Get-ALDependencies: Added per-run deduplication cache so each dependency is only downloaded once per invocation
+ - Get-ALDependencies: app.json and environment.json are now read from the downloaded artifact when present, falling back to the Azure DevOps API otherwise
+### Fixed
+ - Get-ALDependencies: Extracted artifact directories were never cleaned up; they are now deleted automatically after each run
+### Changed
+ - Get-ALDependencies / Get-AppFromLastSuccessfulBuild: Dependency lines now include repo name and build number for easier tracing
+ - Added comment-based help (Get-Help) to all functions in Get-ALDependencies.ps1 and Get-AppFromLastSuccessfulBuild.ps1
+
 ## [1.0.5.5] - 2026-03-18
 ### Fixed
 - Enhance Get-ALDependencies function with improved logging and dependency handling.
