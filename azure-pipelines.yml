@@ -2,22 +2,19 @@
 # Validates a PowerShell module and publishes it to the PowerShell Gallery.
 
 trigger:
-  #branches:
-  #  include:
-  #    - main
-  # To release ONLY on version tags instead of every push to main,
-  # comment out the branches block above and use this instead:
   tags:
-     include:
-       - 'v*'
+    include:
+      - 'v*'
 
 pool:
   vmImage: 'ubuntu-latest'   # pwsh is preinstalled. Use 'windows-latest' for Windows-only modules.
 
 variables:
-  - group: powershell-gallery                 # Library variable group holding PSGALLERY_API_KEY (secret)
-  - name: modulePath
-    value: '$(Build.SourcesDirectory)/BCPowerTools.psd1'   # Folder containing your .psd1 / .psm1
+  - group: powershell-gallery          # Library variable group holding PSGALLERY_API_KEY (secret)
+  - name: moduleName
+    value: 'BCPowerTools'
+  - name: sourceDir
+    value: '$(Build.SourcesDirectory)' # Directory that holds BCPowerTools.psd1 / .psm1
 
 stages:
   # ----------------------------------------------------------------------
@@ -32,13 +29,11 @@ stages:
             displayName: 'Install tooling'
 
           - pwsh: |
-              $manifest = Get-ChildItem -Path '$(modulePath)' -Filter *.psd1 | Select-Object -First 1
-              if (-not $manifest) { throw "No .psd1 manifest found in $(modulePath)" }
-              Test-ModuleManifest -Path $manifest.FullName
+              Test-ModuleManifest -Path '$(sourceDir)/$(moduleName).psd1'
             displayName: 'Test module manifest'
 
           - pwsh: |
-              $results = Invoke-ScriptAnalyzer -Path '$(modulePath)' -Recurse -Severity Error
+              $results = Invoke-ScriptAnalyzer -Path '$(sourceDir)' -Recurse -Severity Error
               if ($results) {
                 $results | Format-Table -AutoSize
                 throw "PSScriptAnalyzer found $($results.Count) error(s)."
@@ -65,18 +60,25 @@ stages:
               steps:
                 - checkout: self            # Deployment jobs don't check out the repo by default
                 - pwsh: |
-                    $manifest = Get-ChildItem -Path '$(modulePath)' -Filter *.psd1 | Select-Object -First 1
-                    $data = Import-PowerShellDataFile -Path $manifest.FullName
-                    $name = [IO.Path]::GetFileNameWithoutExtension($manifest.Name)
-                    Write-Host "Publishing $name version $($data.ModuleVersion)"
+                    # Publish-Module -Path needs a DIRECTORY named after the module,
+                    # containing <ModuleName>.psd1. Stage the files into one.
+                    $staging = Join-Path '$(Agent.TempDirectory)' '$(moduleName)'
+                    New-Item -ItemType Directory -Path $staging -Force | Out-Null
+
+                    # Copy module files into the named folder, leaving repo/CI cruft behind.
+                    Copy-Item -Path '$(sourceDir)/*' -Destination $staging -Recurse -Force `
+                      -Exclude '.git','.github','*.yml','*.yaml','tests','README*','LICENSE*'
+
+                    $data = Import-PowerShellDataFile -Path (Join-Path $staging '$(moduleName).psd1')
+                    Write-Host "Publishing $(moduleName) version $($data.ModuleVersion)"
 
                     # The Gallery rejects duplicate versions, so fail early with a clear message.
-                    $existing = Find-Module -Name $name -RequiredVersion $data.ModuleVersion -ErrorAction SilentlyContinue
+                    $existing = Find-Module -Name '$(moduleName)' -RequiredVersion $data.ModuleVersion -ErrorAction SilentlyContinue
                     if ($existing) {
-                      throw "$name $($data.ModuleVersion) is already published. Bump ModuleVersion in the manifest."
+                      throw "$(moduleName) $($data.ModuleVersion) is already published. Bump ModuleVersion in the manifest."
                     }
 
-                    Publish-Module -Path '$(modulePath)' -NuGetApiKey $env:PSGALLERY_API_KEY -Verbose
+                    Publish-Module -Path $staging -NuGetApiKey $env:PSGALLERY_API_KEY -Verbose
                   displayName: 'Publish-Module'
                   env:
                     PSGALLERY_API_KEY: $(PSGALLERY_API_KEY)   # Map secret to env (keeps it off the command line)
