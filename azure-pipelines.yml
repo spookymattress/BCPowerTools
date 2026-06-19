@@ -17,7 +17,7 @@ pool:
 variables:
   - group: powershell-gallery                 # Library variable group holding PSGALLERY_API_KEY (secret)
   - name: modulePath
-    value: '$(Build.SourcesDirectory)/'   # Folder containing your .psd1 / .psm1
+    value: '$(Build.SourcesDirectory)'   # Folder containing your .psd1 / .psm1
 
 stages:
   # ----------------------------------------------------------------------
