@@ -35,9 +35,9 @@ stages:
           - pwsh: |
               $results = Invoke-ScriptAnalyzer -Path '$(sourceDir)' -Recurse -Severity Error
               if ($results) {
-              $results | Format-Table -AutoSize
-              Write-Host "##vso[task.logissue type=warning]PSScriptAnalyzer found $($results.Count) issue(s)."
-  }
+                $results | Format-Table -AutoSize
+                Write-Host "##vso[task.logissue type=warning]PSScriptAnalyzer found $($results.Count) issue(s)."
+              }
   displayName: 'Run PSScriptAnalyzer'
 
           # Optional: run Pester tests if you have a /tests folder
