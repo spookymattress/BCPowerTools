@@ -33,12 +33,16 @@ stages:
             displayName: 'Test module manifest'
 
           - pwsh: |
+              # Advisory mode: report PSScriptAnalyzer findings as warnings without failing the build.
               $results = Invoke-ScriptAnalyzer -Path '$(sourceDir)' -Recurse -Severity Error
               if ($results) {
                 $results | Format-Table -AutoSize
                 Write-Host "##vso[task.logissue type=warning]PSScriptAnalyzer found $($results.Count) issue(s)."
               }
-  displayName: 'Run PSScriptAnalyzer'
+              # To make this strict again (fail the build on any Error-level finding),
+              # replace the Write-Host line above with:
+              #   throw "PSScriptAnalyzer found $($results.Count) error(s)."
+            displayName: 'Run PSScriptAnalyzer'
 
           # Optional: run Pester tests if you have a /tests folder
           # - pwsh: |
