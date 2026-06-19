@@ -1,0 +1,82 @@
+# azure-pipelines.yml
+# Validates a PowerShell module and publishes it to the PowerShell Gallery.
+
+trigger:
+  #branches:
+  #  include:
+  #    - main
+  # To release ONLY on version tags instead of every push to main,
+  # comment out the branches block above and use this instead:
+  tags:
+     include:
+       - 'v*'
+
+pool:
+  vmImage: 'ubuntu-latest'   # pwsh is preinstalled. Use 'windows-latest' for Windows-only modules.
+
+variables:
+  - group: powershell-gallery                 # Library variable group holding PSGALLERY_API_KEY (secret)
+  - name: modulePath
+    value: '$(Build.SourcesDirectory)/BCPowerTools.psm1'   # Folder containing your .psd1 / .psm1
+
+stages:
+  # ----------------------------------------------------------------------
+  - stage: Validate
+    displayName: 'Validate module'
+    jobs:
+      - job: Validate
+        steps:
+          - pwsh: |
+              Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+              Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+            displayName: 'Install tooling'
+
+          - pwsh: |
+              $manifest = Get-ChildItem -Path '$(modulePath)' -Filter *.psd1 | Select-Object -First 1
+              if (-not $manifest) { throw "No .psd1 manifest found in $(modulePath)" }
+              Test-ModuleManifest -Path $manifest.FullName
+            displayName: 'Test module manifest'
+
+          - pwsh: |
+              $results = Invoke-ScriptAnalyzer -Path '$(modulePath)' -Recurse -Severity Error
+              if ($results) {
+                $results | Format-Table -AutoSize
+                throw "PSScriptAnalyzer found $($results.Count) error(s)."
+              }
+            displayName: 'Run PSScriptAnalyzer'
+
+          # Optional: run Pester tests if you have a /tests folder
+          # - pwsh: |
+          #     Install-Module Pester -Force -Scope CurrentUser
+          #     Invoke-Pester -Path './tests' -CI
+          #   displayName: 'Run Pester tests'
+
+  # ----------------------------------------------------------------------
+  - stage: Publish
+    displayName: 'Publish to PowerShell Gallery'
+    dependsOn: Validate
+    condition: succeeded()
+    jobs:
+      - deployment: Publish
+        environment: 'powershell-gallery'   # Create under Pipelines > Environments; lets you add approvals
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self            # Deployment jobs don't check out the repo by default
+                - pwsh: |
+                    $manifest = Get-ChildItem -Path '$(modulePath)' -Filter *.psd1 | Select-Object -First 1
+                    $data = Import-PowerShellDataFile -Path $manifest.FullName
+                    $name = [IO.Path]::GetFileNameWithoutExtension($manifest.Name)
+                    Write-Host "Publishing $name version $($data.ModuleVersion)"
+
+                    # The Gallery rejects duplicate versions, so fail early with a clear message.
+                    $existing = Find-Module -Name $name -RequiredVersion $data.ModuleVersion -ErrorAction SilentlyContinue
+                    if ($existing) {
+                      throw "$name $($data.ModuleVersion) is already published. Bump ModuleVersion in the manifest."
+                    }
+
+                    Publish-Module -Path '$(modulePath)' -NuGetApiKey $env:PSGALLERY_API_KEY -Verbose
+                  displayName: 'Publish-Module'
+                  env:
+                    PSGALLERY_API_KEY: $(PSGALLERY_API_KEY)   # Map secret to env (keeps it off the command line)
